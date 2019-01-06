@@ -5,3 +5,8 @@ authors = ["Ricardo Mendes <rokusu@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+unrar = '0.4.3'
+zip = '0.5.0'
+azul = { git = "https://github.com/maps4print/azul", rev = "8b5b890c8d3ad9b29427510fb1f7ff8eb23f55f0", features = ["image_loading"] }
+tempfile = "3.0.5"
+walkdir = "2"
