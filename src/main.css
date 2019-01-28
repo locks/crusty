@@ -1,0 +1,48 @@
+/* div {
+  padding: 2px;
+} */
+
+#my-page {
+  /* position: absolute; */
+  /* top: 5px; */
+  /* left: 5px; */
+  /* right: 0px; */
+  /* bottom: 0px; */
+  /* overflow: scroll; */
+  /* height: [[ page_height | auto ]]; */
+
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  bottom: 0px;
+  right: 0px;
+
+  /* border: 15px dotted black; */
+
+  /* background: [[image(my_image_id) | none ]]; */
+  /* background: image("0") ; */
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+
+.comic-book {
+  flex-direction: row;
+  border: 5px dotted purple;
+}
+
+.page {
+  background-size: contain;
+  /* background-repeat: no-repeat; */
+  background: [[ image(my_image_id) | image("3") ]];
+}
+
+
+#my-page-1 {
+  background: image("0");
+  border: 5px dotted red;
+}
+
+#my-page-2 {
+  background: image("1");
+  border: 5px dotted blue;
+}
