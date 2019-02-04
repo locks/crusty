@@ -1,5 +1,4 @@
-
-fn zip_archive() {
+pub fn zip_archive() {
     let fname = std::path::Path::new("Girigiri.cbz");
     let zipfile = std::fs::File::open(&fname).unwrap();
 
@@ -7,85 +6,45 @@ fn zip_archive() {
 
     for i in 0..archive.len() {
         let file = archive.by_index(i).unwrap();
-        println!("{} - {:?}", file.name(), file.size())
+        // println!("{} - {:?}", file.name(), file.size())
     }
 }
 
-pub fn rar_archive() -> tempfile::TempDir {
+pub fn rar_archive(archive_path: String) -> tempfile::TempDir {
     let dir = tempfile::tempdir().unwrap();
 
-    let archive = unrar::Archive::new("cromartie.cbr".into()).list().unwrap();
-    for entry in archive {
-        let e = entry.unwrap();
-
-        if e.is_directory() {
-            continue;
-        }
-        // println!("{}", e.filename);
-    }
-
-    println!("--- NEW BEGINNINGS ---");
-
-    unrar::Archive::new("cromartie.cbr".into())
+    unrar::Archive::new(archive_path)
         .extract_to(dir.path().to_str().unwrap().to_string())
         .unwrap()
         .process()
         .unwrap();
 
-    // println!("{:?}", dir.path().join("**"));
-
-    // println!(
-    //     "{:?}",
-    //     glob::glob(dir.path().join("**/*").to_str().unwrap()) // NOT "/**/*"
-    //         .unwrap()
-    //         .count()
-    // );
-
-    // for entry in
-    //     glob::glob(dir.path().join("**/*").to_str().unwrap()).expect("Failed to read glob pattern")
-    // {
-    //     match entry {
-    //         Ok(path) => println!("{:?}", path.display()),
-    //         Err(e) => println!("{:?}", e),
-    //     }
-    // }
-
-    // println!(
-    //     "{:?}",
-    //     walkdir::WalkDir::new(dir.path()).into_iter().count()
-    // );
-
     let mut count = 0;
-    let entries = walkdir::WalkDir::new(dir.path())
-        // .into_iter()
-        // .take(10)
-        ;
+    let entries = walkdir::WalkDir::new(dir.path());
 
     for entry in entries {
         let entry = entry.unwrap();
-        // dbg!(&entry.file_name());
-
-        // if count == 1 {
-        //     println!("{:?}", entry.path())
-        // }
 
         if !entry.file_type().is_dir() {
             count = count + 1;
-            // println!("{}", entry.path().display());
         }
     }
 
     dir
 }
 
-pub fn load_images(dir: &std::path::Path, imgs: &mut Vec<Vec<u8>>) {
+pub fn expand(archive_path: String) -> tempfile::TempDir {
+    rar_archive(archive_path)
+}
+
+pub struct ImagePage {
+    pub filename: String,
+    pub content: Vec<u8>,
+}
+
+pub fn images(dir: &std::path::Path, imgs: &mut Vec<ImagePage>) {
     let mut b = true;
-    let entries = walkdir::WalkDir::new(dir)
-            .sort_by(|a,b| {
-            // println!("{:?}-{:?}", a, b);
-            a.path().cmp(b.path())
-        })
-;
+    let entries = walkdir::WalkDir::new(dir).sort_by(|a, b| a.path().cmp(b.path()));
 
     for entry in entries {
         let entry = entry.unwrap();
@@ -94,10 +53,21 @@ pub fn load_images(dir: &std::path::Path, imgs: &mut Vec<Vec<u8>>) {
             if b {
                 b = false
             }
-                println!("{:?}", entry);
+            // println!("{:?}", entry);
 
             let img = std::fs::read(entry.path()).unwrap();
-            imgs.push(img);
+            let image_page = ImagePage {
+                filename: entry.path().display().to_string(),
+                content: img,
+            };
+            imgs.push(image_page);
         }
     }
+}
+
+pub fn load_images(archive_path: String, imgs: &mut Vec<ImagePage>) {
+    let expanded = expand(archive_path);
+    let dir = expanded.path();
+
+    images(&dir, imgs)
 }
