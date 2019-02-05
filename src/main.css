@@ -27,7 +27,7 @@
 
 .comic-book {
   flex-direction: row;
-  border: 5px dotted purple;
+  /* border: 5px dotted purple; */
   background-repeat: no-repeat;
 }
 

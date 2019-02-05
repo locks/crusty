@@ -38,6 +38,7 @@ pub fn expand(archive_path: String) -> tempfile::TempDir {
 }
 
 pub struct ImagePage {
+    pub path: String,
     pub filename: String,
     pub content: Vec<u8>,
 }
@@ -57,7 +58,8 @@ pub fn images(dir: &std::path::Path, imgs: &mut Vec<ImagePage>) {
 
             let img = std::fs::read(entry.path()).unwrap();
             let image_page = ImagePage {
-                filename: entry.path().display().to_string(),
+                path: entry.path().display().to_string(),
+                filename: entry.file_name().to_str().unwrap().to_string(),
                 content: img,
             };
             imgs.push(image_page);

@@ -4,6 +4,9 @@ use azul::prelude::*;
 
 struct MyDataModel {
     current_page: usize,
+    page: String,
+    second_page: String,
+    source: Vec<self::archive::ImagePage>,
     pages: Vec<String>,
     page_layout: PageLayout,
 }
@@ -12,6 +15,9 @@ impl Default for MyDataModel {
     fn default() -> Self {
         MyDataModel {
             current_page: 0,
+            page: "".to_string(),
+            second_page: "".to_string(),
+            source: vec![],
             pages: vec![],
             page_layout: PageLayout::Book,
         }
@@ -38,15 +44,13 @@ fn update_keyboard(
     app_state: &mut AppState<MyDataModel>,
     event: &mut CallbackInfo<MyDataModel>,
 ) -> UpdateScreen {
-    let current_key: char = app_state.windows[event.window_id]
+    let keyboard = app_state.windows[event.window_id]
         .state
-        .get_keyboard_state()
-        .current_char?;
+        .get_keyboard_state();
 
-    match current_key {
+    let mut data = app_state.data.lock().ok()?;
+    let next = match keyboard.current_char? {
         't' => {
-            let mut data = app_state.data.lock().ok()?;
-
             if let PageLayout::Page = data.page_layout {
                 data.current_page = data.current_page - (data.current_page % 2);
             }
@@ -54,9 +58,7 @@ fn update_keyboard(
             data.page_layout = data.page_layout.toggle();
             Redraw
         }
-        'n' => {
-            let mut data = app_state.data.lock().ok()?;
-
+        'n' | '\u{f702}' => {
             match data.page_layout {
                 PageLayout::Page => {
                     if data.current_page < data.pages.len() {
@@ -72,9 +74,7 @@ fn update_keyboard(
 
             Redraw
         }
-        'p' => {
-            let mut data = app_state.data.lock().ok()?;
-
+        'p' | '\u{f703}' => {
             match data.page_layout {
                 PageLayout::Page => {
                     if data.current_page > 0 {
@@ -82,23 +82,60 @@ fn update_keyboard(
                     }
                 }
                 PageLayout::Book => {
-                    if data.current_page - 1 > 0 {
-                        data.current_page = data.current_page - 2;
+                    data.current_page = data.current_page - 2;
+
+                    if data.current_page < usize::min_value() {
+                        data.current_page = 0;
                     }
                 }
             }
 
             Redraw
         }
-        _ => {
-            println!("no match: {:?}", current_key);
+        'q' => {
+            if keyboard.super_down {
+                println!("Quitting …");
+                std::process::exit(1);
+            }
+
             DontRedraw
         }
+        _ => DontRedraw,
+    };
+
+    let image: &self::archive::ImagePage = data.source.get(data.current_page).unwrap();
+    if !app_state.resources.has_image(image.filename.to_string()) {
+        app_state
+            .resources
+            .add_image(
+                image.filename.to_string(),
+                &mut image.content.as_slice(),
+                ImageType::GuessImageFormat,
+            )
+            .ok();
+    };
+    data.page = image.filename.to_string();
+
+    if let PageLayout::Book = data.page_layout {
+        let image: &self::archive::ImagePage = data.source.get(data.current_page).unwrap();
+        if !app_state.resources.has_image(image.filename.to_string()) {
+            app_state
+                .resources
+                .add_image(
+                    image.filename.to_string(),
+                    &mut image.content.as_slice(),
+                    ImageType::GuessImageFormat,
+                )
+                .ok();
+        };
+        data.second_page = image.filename.to_string();
     }
+
+    next
 }
 
 impl Layout for MyDataModel {
-    fn layout(&self, _info: LayoutInfo<Self>) -> Dom<Self> {
+    fn layout(&self, info: LayoutInfo<Self>) -> Dom<Self> {
         let mut dom = Dom::new(NodeType::Div)
             .with_callback(
                 EventFilter::Window(WindowEventFilter::VirtualKeyUp),
@@ -114,10 +151,7 @@ impl Layout for MyDataModel {
                         .with_css_override(
                             "my_image",
                             CssProperty::Background(azul::css::StyleBackground::Image(CssImageId(
-                                self.pages
-                                    .get(self.current_page + 1)
-                                    .unwrap_or(&"0".to_string())
-                                    .to_string(),
+                                self.page.to_string(),
                             ))),
                         ),
                 );
@@ -131,10 +165,23 @@ impl Layout for MyDataModel {
                 .with_css_override(
                     "my_image",
                     CssProperty::Background(azul::css::StyleBackground::Image(CssImageId(
-                        self.pages.get(self.current_page).unwrap().to_string(),
+                        self.second_page.to_string(),
                     ))),
                 ),
         );
+
+        match self.page_layout {
+            PageLayout::Page => {
+                info.window.state.title = format!("{}", self.pages.get(self.current_page).unwrap())
+            }
+            PageLayout::Book => {
+                info.window.state.title = format!(
+                    "{} - {}",
+                    self.pages.get(self.current_page + 1).unwrap(),
+                    self.pages.get(self.current_page).unwrap()
+                )
+            }
+        }
 
         return dom;
     }
@@ -151,30 +198,21 @@ fn main() {
 
     let mut data = MyDataModel::default();
     let mut images: Vec<self::archive::ImagePage> = vec![];
+    println!("Loading images …");
     self::archive::load_images("cromartie.cbr".to_string(), &mut images);
+    println!("Loading images ✓");
 
     for image in &images {
         data.pages.push(image.filename.to_string());
     }
+    data.source = images;
 
-    let mut app = App::new(data, AppConfig::default());
+    let app = App::new(data, AppConfig::default());
     let css = css::override_native(include_str!(CSS_PATH!())).unwrap();
     let mut window_options = WindowCreateOptions::default();
     window_options.state.title = "Crusty".into();
     let window = Window::new(window_options, css).unwrap();
 
-    let mut count = 0;
-    for image in &images {
-        // println!("{}", image.filename);
-        // app.app_state.data.current_page = Option::Some(image.filename);
-        app.add_image(
-            image.filename.to_string(),
-            &mut image.content.as_slice(),
-            ImageType::GuessImageFormat,
-        )
-        .unwrap();
-        count = count + 1;
-    }
-
+    println!("Running app");
     app.run(window).unwrap();
 }
