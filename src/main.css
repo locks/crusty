@@ -26,8 +26,8 @@
 }
 
 .comic-book {
-  flex-direction: row;
-  /* border: 5px dotted purple; */
+  /* flex-direction: row; */
+  flex-direction: row-reverse;
   background-repeat: no-repeat;
 }
 
@@ -35,4 +35,16 @@
   background-size: contain;
   background-repeat: no-repeat;
   background: [[ my_image | image("0") ]];
+}
+
+.help {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  bottom: 0px;
+  right: 0px;
+
+  color: white;
+
+  background-color: rgba(0,0,0,0.8);
 }
