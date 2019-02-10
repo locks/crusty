@@ -26,6 +26,42 @@ impl Default for MyDataModel {
     }
 }
 
+impl MyDataModel {
+    fn next_page(&mut self) {
+        match self.page_layout {
+            PageLayout::Page => {
+                if self.current_page < self.pages.len() {
+                    self.current_page = self.current_page + 1;
+                }
+            }
+            PageLayout::Book => {
+                if self.current_page + 2 < self.pages.len() {
+                    self.current_page = self.current_page + 2;
+                }
+            }
+        }
+    }
+
+    fn previous_page(&mut self) {
+        match self.page_layout {
+            PageLayout::Page => {
+                if self.current_page > 0 {
+                    self.current_page = self.current_page - 1;
+                }
+            }
+            PageLayout::Book => {
+                if self.current_page != usize::min_value() {
+                    self.current_page = self.current_page - 2;
+                }
+            }
+        }
+    }
+
+    fn toggle_help(&mut self) {
+        self.show_help = !self.show_help;
+    }
+}
+
 enum PageLayout {
     Page,
     Book,
@@ -51,46 +87,21 @@ fn update_keyboard(
         .get_keyboard_state();
 
     let mut data = app_state.data.lock().ok()?;
-    let next = match keyboard.current_char? {
+    dbg!(keyboard);
+    let mut redraw = Redraw;
+    match keyboard.current_char? {
         't' => {
             if let PageLayout::Page = data.page_layout {
                 data.current_page = data.current_page - (data.current_page % 2);
             }
 
             data.page_layout = data.page_layout.toggle();
-            Redraw
         }
-        'n' | '\u{f702}' => {
-            match data.page_layout {
-                PageLayout::Page => {
-                    if data.current_page < data.pages.len() {
-                        data.current_page = data.current_page + 1;
-                    }
-                }
-                PageLayout::Book => {
-                    if data.current_page + 1 < data.pages.len() {
-                        data.current_page = data.current_page + 2;
-                    }
-                }
-            }
-
-            Redraw
+        'n' | '\u{f702}' | ' ' => {
+            data.next_page();
         }
         'p' | '\u{f703}' => {
-            match data.page_layout {
-                PageLayout::Page => {
-                    if data.current_page > 0 {
-                        data.current_page = data.current_page - 1;
-                    }
-                }
-                PageLayout::Book => {
-                    if data.current_page != usize::min_value() {
-                        data.current_page = data.current_page - 2;
-                    }
-                }
-            }
-
-            Redraw
+            data.previous_page();
         }
         'q' => {
             if keyboard.super_down {
@@ -98,14 +109,12 @@ fn update_keyboard(
                 std::process::exit(1);
             }
 
-            DontRedraw
+            redraw = DontRedraw;
         }
         'h' => {
-            data.show_help = !data.show_help;
-
-            Redraw
+            data.toggle_help();
         }
-        _ => DontRedraw,
+        _ => redraw = DontRedraw,
     };
 
     let image: &self::archive::ImagePage = data.source.get(data.current_page).unwrap();
@@ -140,7 +149,7 @@ fn update_keyboard(
         data.second_page = second_image.filename.to_string();
     }
 
-    next
+    redraw
 }
 
 impl Layout for MyDataModel {

@@ -1,5 +1,5 @@
-pub fn zip_archive() {
-    let fname = std::path::Path::new("Girigiri.cbz");
+pub fn zip_archive(archive_path: &String, dir: &mut tempfile::TempDir) {
+    let fname = std::path::Path::new(archive_path);
     let zipfile = std::fs::File::open(&fname).unwrap();
 
     let mut archive = zip::ZipArchive::new(zipfile).unwrap();
@@ -10,9 +10,7 @@ pub fn zip_archive() {
     }
 }
 
-pub fn rar_archive(archive_path: String) -> tempfile::TempDir {
-    let dir = tempfile::tempdir().unwrap();
-
+pub fn rar_archive(archive_path: String, dir: &mut tempfile::TempDir) {
     unrar::Archive::new(archive_path)
         .extract_to(dir.path().to_str().unwrap().to_string())
         .unwrap()
@@ -29,12 +27,15 @@ pub fn rar_archive(archive_path: String) -> tempfile::TempDir {
             count = count + 1;
         }
     }
-
-    dir
 }
 
 pub fn expand(archive_path: String) -> tempfile::TempDir {
-    rar_archive(archive_path)
+    let mut dir = tempfile::tempdir().unwrap();
+
+    // zip_archive(&archive_path, &mut dir);
+    rar_archive(archive_path, &mut dir);
+
+    dir
 }
 
 pub struct ImagePage {
