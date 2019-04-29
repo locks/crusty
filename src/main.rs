@@ -118,33 +118,22 @@ fn update_keyboard(
     };
 
     let image: &self::archive::ImagePage = data.source.get(data.current_page).unwrap();
-    if !app_state.resources.has_image(image.filename.to_string()) {
+    if !app_state.resources.has_css_image_id(&image.filename) {
+        let image_id = app_state.add_css_image_id(image.filename);
         app_state
             .resources
-            .add_image(
-                image.filename.to_string(),
-                &mut image.content.as_slice(),
-                ImageType::GuessImageFormat,
-            )
-            .ok();
+            .add_image(image_id, ImageSource::Embedded(image.content.as_slice()))
     };
     data.first_page = image.filename.to_string();
 
     if let PageLayout::Book = data.page_layout {
         let second_image: &self::archive::ImagePage =
             data.source.get(data.current_page + 1).unwrap();
-        if !app_state
-            .resources
-            .has_image(second_image.filename.to_string())
-        {
+        if !app_state.resources.has_css_image_id(&second_image.filename) {
+            let image_id = app_state.add_css_image_id(second_image.filename);
             app_state
                 .resources
-                .add_image(
-                    second_image.filename.to_string(),
-                    &mut second_image.content.as_slice(),
-                    ImageType::GuessImageFormat,
-                )
-                .ok();
+                .add_image(image_id, ImageSource::Embedded(&second_image.content))
         };
         data.second_page = second_image.filename.to_string();
     }
@@ -245,12 +234,11 @@ fn main() {
     }
     data.source = images;
 
-    let app = App::new(data, AppConfig::default());
+    let mut app = App::new(data, AppConfig::default()).unwrap();
     let css = css::override_native(include_str!(CSS_PATH!())).unwrap();
     let mut window_options = WindowCreateOptions::default();
     window_options.state.title = "Crusty".into();
-    let window = Window::new(window_options, css).unwrap();
+    let window = app.create_window(window_options, css).unwrap();
 
-    println!("Running app");
     app.run(window).unwrap();
 }
