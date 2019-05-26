@@ -1,11 +1,11 @@
-pub fn zip_archive(archive_path: &String, dir: &mut tempfile::TempDir) {
+pub fn zip_archive(archive_path: &String, _dir: &mut tempfile::TempDir) {
     let fname = std::path::Path::new(archive_path);
     let zipfile = std::fs::File::open(&fname).unwrap();
 
     let mut archive = zip::ZipArchive::new(zipfile).unwrap();
 
     for i in 0..archive.len() {
-        let file = archive.by_index(i).unwrap();
+        let _file = archive.by_index(i).unwrap();
         // println!("{} - {:?}", file.name(), file.size())
     }
 }

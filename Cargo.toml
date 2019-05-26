@@ -7,12 +7,12 @@ edition = "2018"
 [dependencies]
 unrar = '0.4.3'
 zip = '0.5.0'
-# azul = { git = "https://github.com/maps4print/azul" }
+azul = { git = "https://github.com/maps4print/azul" }
 # azul = { path = "../azul/azul", features = ["image_loading"] }
 # azul = { path = "../azul/azul" }
 tempfile = "3.0.5"
 walkdir = "2"
 
-[dependencies.azul]
-path = "../azul/azul"
-features = ["image_loading"]
+# [dependencies.azul]
+# path = "../azul/azul"
+# features = ["image_loading"]
